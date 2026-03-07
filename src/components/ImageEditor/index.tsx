@@ -1,12 +1,12 @@
+import { uploadImage } from '@/services/conversion';
+import { useAppStore } from '@/store/useAppStore';
+import { CheckOutlined, RotateLeftOutlined, RotateRightOutlined, UndoOutlined } from '@ant-design/icons';
+import { Button, Space, message } from 'antd';
+import "cropperjs/dist/cropper.css";
 import React, { useRef, useState } from 'react';
 import Cropper, { ReactCropperElement } from "react-cropper";
-import "cropperjs/dist/cropper.css";
-import { Button, Space, message } from 'antd';
-import { RotateLeftOutlined, RotateRightOutlined, CheckOutlined, UndoOutlined } from '@ant-design/icons';
-import { useAppStore } from '@/store/useAppStore';
-import { uploadImage } from '@/services/conversion';
 
-export const ImageEditor: React.FC = () => {
+export const ImageEditor: React.FC<{ onUploadSuccess?: (taskId: string) => void }> = ({ onUploadSuccess }) => {
   const { previewUrl, startTask, reset } = useAppStore();
   const cropperRef = useRef<ReactCropperElement>(null);
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,11 @@ export const ImageEditor: React.FC = () => {
       try {
         const res = await uploadImage(blob);
         if (res.code === 200) {
-          startTask(res.data.taskId);
+          if (onUploadSuccess) {
+            onUploadSuccess(res.data.taskId);
+          } else {
+            startTask(res.data.taskId);
+          }
         } else {
           message.error('Upload failed');
         }
@@ -44,8 +48,32 @@ export const ImageEditor: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-      <div style={{ width: '100%', height: '500px', background: '#333' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '20px',
+      height: '100%',
+      padding: '20px'
+    }}>
+      <div className="glow-text" style={{
+        alignSelf: 'flex-start',
+        fontSize: '1.5rem',
+        color: 'var(--primary-cyan)',
+        marginBottom: '10px',
+        letterSpacing: '2px'
+      }}>
+        IMAGE_PROCESSOR // EDIT
+      </div>
+
+      <div className="tech-border" style={{
+        width: '100%',
+        flex: 1,
+        background: '#111',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        position: 'relative'
+      }}>
         <Cropper
           src={previewUrl || ''}
           style={{ height: '100%', width: '100%' }}
@@ -55,18 +83,59 @@ export const ImageEditor: React.FC = () => {
           ref={cropperRef}
           background={false}
           responsive={true}
-          autoCropArea={1}
+          autoCropArea={0.8}
         />
+
+        {/* Decorative corners */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 20, height: 20, borderTop: '2px solid var(--primary-cyan)', borderLeft: '2px solid var(--primary-cyan)', zIndex: 10 }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, borderTop: '2px solid var(--primary-cyan)', borderRight: '2px solid var(--primary-cyan)', zIndex: 10 }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: 20, height: 20, borderBottom: '2px solid var(--primary-cyan)', borderLeft: '2px solid var(--primary-cyan)', zIndex: 10 }} />
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderBottom: '2px solid var(--primary-cyan)', borderRight: '2px solid var(--primary-cyan)', zIndex: 10 }} />
       </div>
-      
-      <Space>
-        <Button icon={<UndoOutlined />} onClick={reset}>Reset</Button>
-        <Button icon={<RotateLeftOutlined />} onClick={() => handleRotate(-90)}>Rotate Left</Button>
-        <Button icon={<RotateRightOutlined />} onClick={() => handleRotate(90)}>Rotate Right</Button>
-        <Button type="primary" icon={<CheckOutlined />} loading={loading} onClick={handleConfirm}>
-          Start Processing
-        </Button>
-      </Space>
+
+      <div className="glass-panel" style={{ padding: '20px', borderRadius: '15px' }}>
+        <Space size="large">
+          <Button
+            ghost
+            size="large"
+            icon={<UndoOutlined />}
+            onClick={reset}
+            style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
+          >
+            RESET
+          </Button>
+          <Button
+            ghost
+            size="large"
+            icon={<RotateLeftOutlined />}
+            onClick={() => handleRotate(-90)}
+          >
+            ROTATE L
+          </Button>
+          <Button
+            ghost
+            size="large"
+            icon={<RotateRightOutlined />}
+            onClick={() => handleRotate(90)}
+          >
+            ROTATE R
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CheckOutlined />}
+            loading={loading}
+            onClick={handleConfirm}
+            style={{
+              minWidth: '150px',
+              height: '40px',
+              fontSize: '1.1rem'
+            }}
+          >
+            PROCESS
+          </Button>
+        </Space>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
+import { useEffect, useRef } from 'react';
 // import { getTaskStatus } from '@/services/conversion';
 
 export const usePolling = () => {
@@ -18,7 +18,7 @@ export const usePolling = () => {
     // Mock Simulation Logic (Remove this block when real API is ready)
     // In real scenario, we poll the API
     let mockProgress = 0;
-    
+
     // @ts-ignore
     timerRef.current = setInterval(async () => {
       // Real API Call:
@@ -26,7 +26,7 @@ export const usePolling = () => {
       // updateProgress(res.progress);
       // if (res.status === 'completed') completeTask(res.data!);
       // if (res.status === 'failed') failTask(res.error!);
-      
+
       // Mock Implementation:
       mockProgress += 10;
       updateProgress(mockProgress);
@@ -34,6 +34,7 @@ export const usePolling = () => {
         completeTask({
           dxfUrl: 'https://example.com/download.dxf', // Mock URL
           previewImgUrl: 'https://placehold.co/600x400?text=DXF+Preview', // Mock Image
+          orderId: 'ORD-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0')
         });
         if (timerRef.current) clearInterval(timerRef.current);
       }
