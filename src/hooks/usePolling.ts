@@ -32,7 +32,7 @@ export const usePolling = () => {
       updateProgress(mockProgress);
       if (mockProgress >= 100) {
         completeTask({
-          dxfUrl: 'https://example.com/download.dxf', // Mock URL
+          dxfUrl: '/output.dxf', // Changed to local real file!
           previewImgUrl: 'https://placehold.co/600x400?text=DXF+Preview', // Mock Image
           orderId: 'ORD-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0')
         });

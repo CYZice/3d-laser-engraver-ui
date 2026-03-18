@@ -15,6 +15,7 @@ function App() {
   const reset = useAppStore((s) => s.reset);
   const startTask = useAppStore((s) => s.startTask);
   const orderId = useAppStore((s) => s.orderId);
+  const result = useAppStore((s) => s.result);
 
   // Global Idle Timeout
   useEffect(() => {
@@ -94,6 +95,8 @@ function App() {
           <ResultTicket
             orderId={orderId || 'Unknown'}
             onDone={reset}
+            dxfUrl={result?.dxfUrl || ''}
+            fallbackImgUrl={result?.previewImgUrl || ''}
           />
         );
 

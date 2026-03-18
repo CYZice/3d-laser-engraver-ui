@@ -1,9 +1,9 @@
 import { usePolling } from '@/hooks/usePolling';
 import { useAppStore } from '@/store/useAppStore';
-import { Progress, Typography } from 'antd';
+import { Progress } from 'antd';
 import React from 'react';
 
-const { Title, Text } = Typography;
+// Removed unused destructured elements
 
 export const ProcessingStatus: React.FC = () => {
   const { progress } = useAppStore();

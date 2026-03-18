@@ -14,6 +14,7 @@
     "@react-three/fiber": "^8.18.0",
     "antd": "^6.3.1",
     "axios": "^1.13.6",
+    "dxf-parser": "^1.1.2",
     "framer-motion": "^12.35.0",
     "less": "^4.5.1",
     "lucide-react": "^0.577.0",
