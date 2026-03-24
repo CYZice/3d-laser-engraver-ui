@@ -1,35 +1,33 @@
 #!/usr/bin/env python3
 """
-pipeline.py — PLY 点云 → 激光雕刻 DXF（完整流水线）
+pipeline.py — 3D 彩色点云 → 激光雕刻 DXF 完整流水线
 
 流程:
-  1. 解析 ASCII PLY 彩色点云
-  2. 投影到 XY 平面，每格取 Z 最大的表面点
-  3. RGB → 灰度，支持多种灰度增强模式
-  4. 半色调二值化（多种算法可选）
-  5. 导出 DXF（保留真实 3D 坐标）+ 预览 PNG
+  1. 加载 PLY 彩色点云
+  2. 表面点过滤（相同 XY 只保留最外层 Z）
+  3. RGB → 灰度（标准亮度公式）
+  4. 半色调二值化（三种方法可选）
+       threshold  : 简单阈值
+       bayer      : Bayer 4×4 有序抖动
+       floyd      : Floyd-Steinberg 误差扩散
+       jarvis     : Jarvis 误差扩散（推荐，人像效果最佳）
+  5. 保存预览图（灰度 + 各方法对比）
+  6. 导出 DXF（保留真实 3D 坐标）
 
-灰度增强模式:
-  texture  — 原始 RGB 纹理色转灰度（平坦，对比差）
-  equalize — 直方图均衡化后的纹理色（推荐）
-  normal   — 表面法线模拟光照（完全来自 3D 几何）
-  blend    — 混合均衡纹理 + 法线着色
+灰度增强（解决纹理色对比度不足）：
+  原始 PLY 中的 RGB 来自神经网络重建的纹理，缺乏光照变化，
+  灰度标准差通常仅 ~33（范围 50~180），导致点阵密度均匀无明暗感。
+  --shading blend（默认）：40% 均衡化纹理 + 60% 法线着色，标准差可达 ~55+。
 
-半色调算法:
-  threshold : 简单阈值
-  bayer    : Bayer 4×4 有序抖动
-  floyd    : Floyd-Steinberg 误差扩散
-  jarvis   : Jarvis-Judice-Ninke 误差扩散（推荐，人像效果最佳）
-
-物理原理（水晶内雕）:
-  激光打点 → 白色微裂纹 → 散射 LED 光 → 视觉上呈亮色
-  因此亮区（皮肤高光）需要更多打点 → bright→dot（不反转）
-  gamma < 1 提升中间调密度（默认 0.5 = 开方）
+物理原理（水晶内雕）：
+  激光在打点处产生白色微裂纹 → 散射 LED 光 → 视觉上呈现亮色
+  因此：亮区（皮肤高光）需要更多打点 → bright→dot（不反转灰度）
+  Gamma < 1 可提升中间调密度，使整体更接近实际雕刻效果。
 
 用法:
   python3 pipeline.py input.ply
-  python3 pipeline.py input.ply --resolution 0.5 --method jarvis --shading equalize
-  python3 pipeline.py input.ply --method all --gamma 0.5 --shading blend
+  python3 pipeline.py input.ply --resolution 0.5 --method jarvis
+  python3 pipeline.py input.ply --method all --gamma 0.5
 """
 
 import sys
@@ -38,14 +36,23 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+matplotlib.rcParams['font.sans-serif'] = ['PingFang SC', 'Heiti SC', 'SimHei',
+                                           'Arial Unicode MS', 'DejaVu Sans']
+matplotlib.rcParams['axes.unicode_minus'] = False
 from pathlib import Path
 
 
-# ── 1. PLY 解析 ────────────────────────────────────────────────────────────────
+# ─── 1. PLY 解析 ──────────────────────────────────────────────────────────────
 
 def parse_ply(filepath: Path) -> np.ndarray:
-    """解析 ASCII PLY，返回 (N,7) float32: [x,y,z,r,g,b,a]，rgb 为 0~255"""
-    in_data, has_color, points = False, False, []
+    """
+    解析 ASCII PLY，返回 (N, 7) float32 数组: [x, y, z, r, g, b, a]
+    r g b a 为 0~255
+    """
+    in_data = False
+    has_color = False
+    points = []
+
     with open(filepath, encoding='utf-8', errors='ignore') as f:
         for line in f:
             s = line.strip()
@@ -56,52 +63,67 @@ def parse_ply(filepath: Path) -> np.ndarray:
                 continue
             if not in_data or not s:
                 continue
-            p = s.split()
+            parts = s.split()
             try:
-                if has_color and len(p) >= 7:
-                    points.append([float(p[0]), float(p[1]), float(p[2]),
-                                   float(p[3]), float(p[4]), float(p[5]), float(p[6])])
-                elif len(p) >= 3:
-                    points.append([float(p[0]), float(p[1]), float(p[2]),
-                                   128., 128., 128., 255.])
+                if has_color and len(parts) >= 7:
+                    points.append([float(parts[0]), float(parts[1]), float(parts[2]),
+                                   float(parts[3]), float(parts[4]),
+                                   float(parts[5]), float(parts[6])])
+                elif len(parts) >= 3:
+                    points.append([float(parts[0]), float(parts[1]), float(parts[2]),
+                                   128.0, 128.0, 128.0, 255.0])
             except (ValueError, IndexError):
                 pass
+
     return np.array(points, dtype=np.float32)
 
 
-# ── 2. 表面过滤 + 灰度网格 ─────────────────────────────────────────────────────
+# ─── 2. 表面点过滤 + 灰度网格 ────────────────────────────────────────────────
 
 def build_gray_grid(pts: np.ndarray, resolution: float):
     """
-    将点云投影到 XY 平面：每格只保留 Z 最大的点（最外层表面）。
-    返回: gray_grid(H,W), z_grid(H,W), x_min, y_min
-    gray_grid 有效格子值 0~255，空格子为 -1。
+    将 3D 彩色点云投影到 XY 平面网格：
+    - 相同 (X, Y) 格子只保留 Z 最大的点（最外层表面）
+    - 计算该点的灰度值
+
+    返回:
+        gray_grid : (H, W) float32，有效格子为 0~255，空格子为 -1
+        z_grid    : (H, W) float32，对应真实 Z 坐标
+        x_min, y_min : 网格原点偏移量
     """
     x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
-    r, g, b  = pts[:, 3], pts[:, 4], pts[:, 5]
-    gray = r * 0.299 + g * 0.587 + b * 0.114
+    r, g, b = pts[:, 3], pts[:, 4], pts[:, 5]
+
+    gray = r * 0.299 + g * 0.587 + b * 0.114  # 标准亮度公式，结果 0~255
 
     x_min, y_min = float(x.min()), float(y.min())
+
     xi = ((x - x_min) / resolution).astype(np.int32)
     yi = ((y - y_min) / resolution).astype(np.int32)
-    W, H = int(xi.max()) + 1, int(yi.max()) + 1
+
+    W = int(xi.max()) + 1
+    H = int(yi.max()) + 1
 
     gray_grid = np.full((H, W), -1.0, dtype=np.float32)
     z_grid    = np.full((H, W), -np.inf, dtype=np.float32)
 
-    order    = np.argsort(-z)
+    # 按 Z 降序排列，先处理 Z 最大的点
+    order = np.argsort(-z)
     xi_s, yi_s = xi[order], yi[order]
     z_s, gray_s = z[order], gray[order]
+
+    # 把每个格子展平为 1D 线性索引，取首次出现（Z 最大）
     flat_idx = yi_s.astype(np.int64) * W + xi_s.astype(np.int64)
     _, first = np.unique(flat_idx, return_index=True)
-    sx, sy   = xi_s[first], yi_s[first]
+
+    sx, sy = xi_s[first], yi_s[first]
     gray_grid[sy, sx] = gray_s[first]
     z_grid[sy, sx]    = z_s[first]
 
     return gray_grid, z_grid, x_min, y_min
 
 
-# ── 3. 灰度增强（法线着色 / 直方图均衡 / 混合）────────────────────────────
+# ─── 3. 灰度增强（法线着色 / 直方图均衡 / 混合）────────────────────────────
 
 def compute_normal_shading(z_grid: np.ndarray, resolution: float) -> np.ndarray:
     """
@@ -113,6 +135,8 @@ def compute_normal_shading(z_grid: np.ndarray, resolution: float) -> np.ndarray:
     z_mean = float(z_grid[valid].mean()) if valid.any() else 0.0
     z_safe = np.where(valid, z_grid, z_mean)
 
+    # ① Masked 中心差分：只有两侧邻居都 valid 时才计算梯度。
+    #    边界格子强制梯度=0，避免 "face Z - z_mean" 轮廓白环。
     both_valid_x = valid[:, :-2] & valid[:, 2:]
     both_valid_y = valid[:-2, :] & valid[2:, :]
 
@@ -123,6 +147,7 @@ def compute_normal_shading(z_grid: np.ndarray, resolution: float) -> np.ndarray:
     dzdy[1:-1, :] = np.where(both_valid_y,
                               (z_safe[2:, :] - z_safe[:-2, :]) / (2.0 * resolution), 0.0)
 
+    # ② 对真实内部梯度做 p99.5 裁剪，消除 UV 接缝白线。
     interior_x = np.abs(dzdx[dzdx != 0])
     interior_y = np.abs(dzdy[dzdy != 0])
     if interior_x.size > 0:
@@ -152,14 +177,7 @@ def equalize_gray(gray_grid: np.ndarray) -> np.ndarray:
     cdf = hist.cumsum().astype(np.float64)
     cdf_min = float(cdf[cdf > 0].min())
     total   = float(valid_mask.sum())
-
-    # Constant-intensity input (all valid pixels share one gray value)
-    # makes (total - cdf_min) = 0. Keep original grayscale to avoid
-    # collapsing everything to black and producing empty DXF entities.
-    if total <= cdf_min + 1e-9:
-        return gray_grid.copy()
-
-    cdf_norm = np.clip((cdf - cdf_min) / (total - cdf_min) * 255.0, 0, 255)
+    cdf_norm = np.clip((cdf - cdf_min) / (total - cdf_min + 1e-9) * 255.0, 0, 255)
 
     out = gray_grid.copy()
     idx = np.clip(gray_grid[valid_mask].astype(np.int32), 0, 255)
@@ -194,7 +212,7 @@ def apply_shading(gray_grid: np.ndarray, z_grid: np.ndarray,
     return out
 
 
-# ── 4. 半色调二值化 ──────────────────────────────────────────────────────────
+# ─── 4. 半色调二值化 ──────────────────────────────────────────────────────────
 
 def halftone_threshold(gray_grid: np.ndarray, thresh: float = 0.5,
                        gamma: float = 0.5) -> np.ndarray:
@@ -273,17 +291,18 @@ def halftone_floyd_steinberg(gray_grid: np.ndarray, gamma: float = 0.5) -> np.nd
     return result
 
 
-# ── 5. Jarvis 半色调（bright→dot + gamma）────────────────────────────────────
-
 def halftone_jarvis(gray_grid: np.ndarray, gamma: float = 0.5) -> np.ndarray:
     """
-    Jarvis-Judice-Ninke 误差扩散（亮区打点，bright→dot）。
-    先对灰度做 gamma 校正：value = (gray/255)^gamma，亮区值高，优先打点。
+    Jarvis-Judice-Ninke 误差扩散（亮区打点，bright→dot）：
 
-    误差扩散权重（除以 48）:
-              X   7   5
-      3   5   7   5   3
-      1   3   5   3   1
+    误差扩散到 12 个邻居，权重矩阵（除以 48）：
+
+                  X   7   5
+          3   5   7   5   3
+          1   3   5   3   1
+
+    比 Floyd-Steinberg 扩散范围更大，渐变更平滑，
+    更适合人像等复杂图像。先对灰度做 gamma 校正再扩散。
     """
     normed = np.power(np.clip(gray_grid, 0, 255) / 255.0, gamma)
     img    = np.where(gray_grid >= 0, normed, -1.0)
@@ -314,15 +333,18 @@ def halftone_jarvis(gray_grid: np.ndarray, gamma: float = 0.5) -> np.ndarray:
     return result
 
 
-# ── 6. 预览 PNG ────────────────────────────────────────────────────────────────
+# ─── 4. 预览图 ────────────────────────────────────────────────────────────────
 
-def save_preview(gray_grid: np.ndarray, binary_grids: dict, out_path: Path):
+def save_preview(gray_grid: np.ndarray,
+                 binary_grids: dict,
+                 out_path: Path):
     """生成灰度图 + 各二值化方法对比的预览 PNG"""
     n   = 1 + len(binary_grids)
     fig, axes = plt.subplots(1, n, figsize=(5 * n, 5))
     if n == 1:
         axes = [axes]
 
+    # 灰度图
     display_gray = np.where(gray_grid >= 0, gray_grid, 0).astype(np.uint8)
     axes[0].imshow(display_gray, cmap='gray', origin='lower', vmin=0, vmax=255)
     axes[0].set_title('Grayscale', fontsize=11)
@@ -345,32 +367,40 @@ def save_preview(gray_grid: np.ndarray, binary_grids: dict, out_path: Path):
     print(f'  preview → {out_path.name}')
 
 
-# ── 5. DXF 导出 ────────────────────────────────────────────────────────────────
+# ─── 5. DXF 导出 ──────────────────────────────────────────────────────────────
 
-def export_dxf(binary: np.ndarray, z_grid: np.ndarray,
-               x_min: float, y_min: float, resolution: float,
+def export_dxf(binary_grid: np.ndarray,
+               z_grid: np.ndarray,
+               x_min: float, y_min: float,
+               resolution: float,
                out_path: Path):
-    """将打点格子导出为 DXF ASCII POINT，保留真实 3D 坐标"""
-    ys, xs = np.where(binary == 1)
+    """
+    将二值网格导出为 DXF ASCII POINT 实体。
+    每个"打点"格子的真实 3D 坐标被保留（x, y, z_surface）。
+    """
+    ys, xs = np.where(binary_grid == 1)
     zs     = z_grid[ys, xs]
     finite = np.isfinite(zs)
     ys, xs, zs = ys[finite], xs[finite], zs[finite]
+
     px = x_min + xs * resolution
     py = y_min + ys * resolution
+
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n")
         f.write("0\nSECTION\n2\nENTITIES\n")
         for cx, cy, cz in zip(px, py, zs):
             f.write(f"0\nPOINT\n8\n0\n10\n{cx:.4f}\n20\n{cy:.4f}\n30\n{cz:.4f}\n")
         f.write("0\nENDSEC\n0\nEOF\n")
+
     print(f'  DXF   → {out_path.name}  ({len(px):,} points)')
 
 
-# ── 入口 ───────────────────────────────────────────────────────────────────────
+# ─── 入口 ─────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
-        description='PLY point cloud → laser engraving DXF')
+        description='3D colored point cloud → laser engraving DXF')
     parser.add_argument('input',
                         help='Input PLY file (ASCII with RGB colors)')
     parser.add_argument('--resolution', type=float, default=0.5,
@@ -405,7 +435,9 @@ def main():
         out_dir  = out_full.parent
         out_stem = out_full.name
     else:
-        out_dir  = Path(__file__).parent / 'output'
+        # 默认输出到 output/pipeline/（相对脚本所在目录）
+        script_dir = Path(__file__).parent
+        out_dir  = script_dir / 'output' / 'pipeline'
         out_stem = ply_path.stem
     out_dir.mkdir(parents=True, exist_ok=True)
 

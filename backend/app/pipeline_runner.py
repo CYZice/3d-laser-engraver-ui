@@ -55,7 +55,7 @@ def run_cmd(
 
 
 def convert_obj_to_ascii_ply(input_obj: Path, output_ply: Path) -> None:
-    vertices: list[tuple[float, float, float]] = []
+    vertices: list[tuple[float, float, float, int, int, int]] = []
     with input_obj.open("r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             s = line.strip()
@@ -65,10 +65,25 @@ def convert_obj_to_ascii_ply(input_obj: Path, output_ply: Path) -> None:
             if len(parts) < 4:
                 continue
             try:
+                # 尝试解析坐标 (x, y, z)
                 x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
-            except ValueError:
+                # 尝试解析颜色 (r, g, b)，如果不存在则保持中等灰色 (128)
+                r, g, b = 128, 128, 128
+                if len(parts) >= 7:
+                    # 3DDFA 的 OBJ 颜色通常是 0-1 的浮点数或 0-255 整数
+                    # 我们尝试兼容处理
+                    r = int(float(parts[4]) * (255 if float(parts[4]) <= 1.0 else 1.0))
+                    g = int(float(parts[5]) * (255 if float(parts[5]) <= 1.0 else 1.0))
+                    b = int(float(parts[6]) * (255 if float(parts[6]) <= 1.0 else 1.0))
+                    # 限制在 0-255
+                    r, g, b = (
+                        max(0, min(255, r)),
+                        max(0, min(255, g)),
+                        max(0, min(255, b)),
+                    )
+            except (ValueError, IndexError):
                 continue
-            vertices.append((x, y, z))
+            vertices.append((x, y, z, r, g, b))
 
     if not vertices:
         raise PipelineError(
@@ -88,8 +103,8 @@ def convert_obj_to_ascii_ply(input_obj: Path, output_ply: Path) -> None:
         f.write("property uchar blue\n")
         f.write("property uchar alpha\n")
         f.write("end_header\n")
-        for x, y, z in vertices:
-            f.write(f"{x:.6f} {y:.6f} {z:.6f} 128 128 128 255\n")
+        for x, y, z, r, g, b in vertices:
+            f.write(f"{x:.6f} {y:.6f} {z:.6f} {r} {g} {b} 255\n")
 
 
 def run_3ddfa_to_obj(input_img: Path, output_obj: Path) -> Path:
