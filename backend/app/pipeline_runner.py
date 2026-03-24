@@ -156,7 +156,14 @@ def run_obj_to_ply(input_obj: Path, output_ply: Path, density: float = 1.0) -> P
 
 
 def run_ply_to_dxf(
-    input_ply: Path, output_prefix: Path, resolution: float = 0.5, gamma: float = 0.5
+    input_ply: Path,
+    output_prefix: Path,
+    resolution: float = 0.5,
+    gamma: float = 0.5,
+    shading: str = "equalize",
+    method: str = "jarvis",
+    blend_alpha: float = 0.4,
+    threshold: float = 0.5,
 ) -> tuple[Path, Path]:
     ensure_paths()
     cmd = [
@@ -167,13 +174,21 @@ def run_ply_to_dxf(
         str(resolution),
         "--gamma",
         str(gamma),
+        "--shading",
+        shading,
+        "--method",
+        method,
+        "--blend-alpha",
+        str(blend_alpha),
+        "--threshold",
+        str(threshold),
         "--output",
         str(output_prefix),
     ]
     run_cmd(cmd)
 
-    dxf_path = Path(f"{output_prefix}_jarvis.dxf")
-    preview_path = Path(f"{output_prefix}_preview.png")
+    dxf_path = Path(f"{output_prefix}_{shading}_{method}.dxf")
+    preview_path = Path(f"{output_prefix}_{shading}_halftone_preview.png")
 
     if not dxf_path.exists() or dxf_path.stat().st_size == 0:
         raise PipelineError("DXF_NOT_GENERATED", f"DXF output missing: {dxf_path}")

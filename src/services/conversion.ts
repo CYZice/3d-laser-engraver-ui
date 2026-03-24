@@ -18,6 +18,10 @@ export interface CreateTaskRequest {
     dxfResolution?: number;
     pointDensity?: number;
     gamma?: number;
+    shading?: string;
+    method?: string;
+    blendAlpha?: number;
+    threshold?: number;
   };
 }
 

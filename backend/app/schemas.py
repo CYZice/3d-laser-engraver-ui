@@ -55,6 +55,10 @@ class TaskCreateOptions(BaseModel):
     dxf_resolution: float = Field(default=0.5, alias="dxfResolution")
     point_density: float = Field(default=1.0, alias="pointDensity")
     gamma: float = Field(default=0.5, alias="gamma")
+    shading: str = Field(default="equalize", alias="shading")
+    method: str = Field(default="jarvis", alias="method")
+    blend_alpha: float = Field(default=0.4, alias="blendAlpha")
+    threshold: float = Field(default=0.5, alias="threshold")
 
 
 class TaskCreateRequest(BaseModel):
