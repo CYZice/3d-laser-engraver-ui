@@ -99,6 +99,10 @@ function App() {
                     dxfResolution: 0.5,
                     pointDensity: 1.0,
                     gamma: 0.5,
+                    shading: 'equalize',
+                    method: 'jarvis',
+                    blendAlpha: 0.4,
+                    threshold: 0.5,
                   },
                 });
 

@@ -65,11 +65,19 @@ class PipelineOrchestrator:
             )
             resolution = float(task.options.get("dxfResolution", 0.5))
             gamma = float(task.options.get("gamma", 0.5))
+            shading = task.options.get("shading", "equalize")
+            method = task.options.get("method", "jarvis")
+            blend_alpha = float(task.options.get("blendAlpha", 0.4))
+            threshold = float(task.options.get("threshold", 0.5))
             dxf_path, preview_path = run_ply_to_dxf(
                 input_ply=ply_path,
                 output_prefix=output_prefix,
                 resolution=resolution,
                 gamma=gamma,
+                shading=shading,
+                method=method,
+                blend_alpha=blend_alpha,
+                threshold=threshold,
             )
 
             dxf_url = f"/artifacts/{task_id}/{dxf_path.name}"
