@@ -1,0 +1,3 @@
+/Users/mac/主文件夹/学校的事/社团or竞赛/科创/大创/激光雕刻-刘晓东老师/code/ModelTransformer-main/build/CMakeFiles/ModelTransformer.dir
+/Users/mac/主文件夹/学校的事/社团or竞赛/科创/大创/激光雕刻-刘晓东老师/code/ModelTransformer-main/build/CMakeFiles/edit_cache.dir
+/Users/mac/主文件夹/学校的事/社团or竞赛/科创/大创/激光雕刻-刘晓东老师/code/ModelTransformer-main/build/CMakeFiles/rebuild_cache.dir

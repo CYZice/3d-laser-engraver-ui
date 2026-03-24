@@ -12,6 +12,7 @@ interface AppState {
   step: AppStep;
   originalFile: File | null;
   previewUrl: string | null;
+  uploadId: string | null;
   taskId: string | null;
   progress: number;
   result: TaskResult | null;
@@ -20,6 +21,7 @@ interface AppState {
 
   setStep: (step: AppStep) => void;
   setFile: (file: File) => void;
+  setUploadId: (uploadId: string | null) => void;
   setOrderId: (id: string) => void;
   startTask: (taskId: string) => void;
   updateProgress: (progress: number) => void;
@@ -32,6 +34,7 @@ export const useAppStore = create<AppState>((set) => ({
   step: 'ATTRACT',
   originalFile: null,
   previewUrl: null,
+  uploadId: null,
   taskId: null,
   progress: 0,
   result: null,
@@ -43,6 +46,7 @@ export const useAppStore = create<AppState>((set) => ({
     const url = URL.createObjectURL(file);
     set({ originalFile: file, previewUrl: url, step: 'EDIT', error: null });
   },
+  setUploadId: (uploadId) => set({ uploadId }),
   setOrderId: (orderId) => set({ orderId }),
   startTask: (taskId) => set({ taskId, step: 'PROCESSING', progress: 0, error: null }),
   updateProgress: (progress) => set({ progress }),
@@ -57,6 +61,7 @@ export const useAppStore = create<AppState>((set) => ({
     step: 'ATTRACT',
     originalFile: null,
     previewUrl: null,
+    uploadId: null,
     taskId: null,
     progress: 0,
     result: null,

@@ -6,8 +6,8 @@ import "cropperjs/dist/cropper.css";
 import React, { useRef, useState } from 'react';
 import Cropper, { ReactCropperElement } from "react-cropper";
 
-export const ImageEditor: React.FC<{ onUploadSuccess?: (taskId: string) => void }> = ({ onUploadSuccess }) => {
-  const { previewUrl, startTask, reset } = useAppStore();
+export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => void }> = ({ onUploadSuccess }) => {
+  const { previewUrl, reset } = useAppStore();
   const cropperRef = useRef<ReactCropperElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,9 +31,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (taskId: string) => void 
         const res = await uploadImage(blob);
         if (res.code === 200) {
           if (onUploadSuccess) {
-            onUploadSuccess(res.data.taskId);
-          } else {
-            startTask(res.data.taskId);
+            onUploadSuccess(res.data.uploadId);
           }
         } else {
           message.error('Upload failed');

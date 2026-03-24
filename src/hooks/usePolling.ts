@@ -1,10 +1,11 @@
+import { getTaskStatus } from '@/services/conversion';
 import { useAppStore } from '@/store/useAppStore';
 import { useEffect, useRef } from 'react';
-// import { getTaskStatus } from '@/services/conversion';
 
 export const usePolling = () => {
   const { taskId, step, updateProgress, completeTask, failTask } = useAppStore();
-  const timerRef = useRef<number | null>(null); // Use window.setInterval return type if needed, but number is usually fine in browser env if using window.
+  const timerRef = useRef<number | null>(null);
+  const failureCountRef = useRef(0);
 
   useEffect(() => {
     if (step !== 'PROCESSING' || !taskId) {
@@ -12,36 +13,61 @@ export const usePolling = () => {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      failureCountRef.current = 0;
       return;
     }
 
-    // Mock Simulation Logic (Remove this block when real API is ready)
-    // In real scenario, we poll the API
-    let mockProgress = 0;
+    timerRef.current = window.setInterval(async () => {
+      try {
+        const res = await getTaskStatus(taskId);
+        const payload = res.data;
 
-    // @ts-ignore
-    timerRef.current = setInterval(async () => {
-      // Real API Call:
-      // const res = await getTaskStatus(taskId);
-      // updateProgress(res.progress);
-      // if (res.status === 'completed') completeTask(res.data!);
-      // if (res.status === 'failed') failTask(res.error!);
+        failureCountRef.current = 0;
+        updateProgress(Math.max(0, Math.min(100, payload.progress)));
 
-      // Mock Implementation:
-      mockProgress += 10;
-      updateProgress(mockProgress);
-      if (mockProgress >= 100) {
-        completeTask({
-          dxfUrl: '/output.dxf', // Changed to local real file!
-          previewImgUrl: 'https://placehold.co/600x400?text=DXF+Preview', // Mock Image
-          orderId: 'ORD-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-        });
-        if (timerRef.current) clearInterval(timerRef.current);
+        if (payload.status === 'COMPLETED') {
+          const dxfUrl = payload.result?.dxfUrl;
+          if (!dxfUrl) {
+            failTask('Task completed but dxfUrl is missing.');
+          } else {
+            completeTask({
+              dxfUrl,
+              previewImgUrl: payload.result?.previewUrl || '',
+              orderId: payload.taskId,
+            });
+          }
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          return;
+        }
+
+        if (payload.status === 'FAILED') {
+          failTask(payload.error?.message || 'Task failed.');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        failureCountRef.current += 1;
+        if (failureCountRef.current >= 3) {
+          failTask('Network or backend error. Please retry.');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+        }
       }
-    }, 1000);
+    }, 2000);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [step, taskId, updateProgress, completeTask, failTask]);
 };

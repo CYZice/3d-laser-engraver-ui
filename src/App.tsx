@@ -5,15 +5,20 @@ import { ImageUploader } from '@/components/ImageUploader';
 import { PaymentMock } from '@/components/PaymentMock';
 import { ProcessingStatus } from '@/components/ProcessingStatus';
 import { ResultTicket } from '@/components/ResultTicket';
+import { createTask } from '@/services/conversion';
 import { useAppStore } from '@/store/useAppStore';
+import { message } from 'antd';
 import { useEffect } from 'react';
 
 function App() {
   const step = useAppStore((s) => s.step);
   const setStep = useAppStore((s) => s.setStep);
   const setFile = useAppStore((s) => s.setFile);
+  const setUploadId = useAppStore((s) => s.setUploadId);
   const reset = useAppStore((s) => s.reset);
   const startTask = useAppStore((s) => s.startTask);
+  const uploadId = useAppStore((s) => s.uploadId);
+  const originalFile = useAppStore((s) => s.originalFile);
   const orderId = useAppStore((s) => s.orderId);
   const result = useAppStore((s) => s.result);
 
@@ -65,8 +70,8 @@ function App() {
         return (
           <div style={{ padding: 20, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <ImageEditor
-              onUploadSuccess={(taskId) => {
-                startTask(taskId);
+              onUploadSuccess={(uploadedId) => {
+                setUploadId(uploadedId);
                 setStep('PAYMENT');
               }}
             />
@@ -77,8 +82,36 @@ function App() {
         return (
           <PaymentMock
             amount={29.9}
-            onPaymentSuccess={() => {
-              setStep('PROCESSING');
+            onPaymentSuccess={async () => {
+              if (!uploadId) {
+                message.error('Upload session missing, please retry.');
+                setStep('EDIT');
+                return;
+              }
+
+              try {
+                const createRes = await createTask({
+                  uploadId,
+                  paymentToken: `pay_mock_${Date.now()}`,
+                  faceIndex: 0,
+                  options: {
+                    modelVersion: 'mb1_120x120',
+                    dxfResolution: 0.5,
+                    pointDensity: 1.0,
+                    gamma: 0.5,
+                  },
+                });
+
+                const taskId = createRes.data.taskId;
+                startTask(taskId);
+              } catch (err) {
+                console.error(err);
+                const tip = originalFile
+                  ? 'Failed to create task, please try payment again.'
+                  : 'No source image found, please recapture.';
+                message.error(tip);
+                setStep('EDIT');
+              }
             }}
           />
         );
