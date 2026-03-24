@@ -1,1 +1,45 @@
-node_modules
+# Node / frontend
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Native/Cython build outputs
+*.so
+*.pyd
+*.o
+*.obj
+*.a
+*.dll
+*.dylib
+*.exe
+
+# Local CMake build directory for Linux compilation
+objTOdxf/ModelTransformer-main/build_linux/
+
+# Backend runtime artifacts
+backend/uploads/
+backend/artifacts/
+backend/app/__pycache__/
+
+# 3DDFA generated samples
+3DDFA_V2-master/examples/inputs/result.jpg
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Keep reproducibility-critical files versioned
+!README.md
+!package-lock.json

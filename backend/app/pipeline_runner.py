@@ -48,6 +48,48 @@ def run_cmd(
         raise PipelineError(
             "SUBPROCESS_FAILED", f"Command failed: {' '.join(cmd)}\n{detail}"
         ) from exc
+    except OSError as exc:
+        raise PipelineError(
+            "SUBPROCESS_FAILED", f"Command failed: {' '.join(cmd)}\n{exc}"
+        ) from exc
+
+
+def convert_obj_to_ascii_ply(input_obj: Path, output_ply: Path) -> None:
+    vertices: list[tuple[float, float, float]] = []
+    with input_obj.open("r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            s = line.strip()
+            if not s.startswith("v "):
+                continue
+            parts = s.split()
+            if len(parts) < 4:
+                continue
+            try:
+                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+            except ValueError:
+                continue
+            vertices.append((x, y, z))
+
+    if not vertices:
+        raise PipelineError(
+            "PLY_NOT_GENERATED", f"No vertices parsed from OBJ: {input_obj}"
+        )
+
+    output_ply.parent.mkdir(parents=True, exist_ok=True)
+    with output_ply.open("w", encoding="utf-8") as f:
+        f.write("ply\n")
+        f.write("format ascii 1.0\n")
+        f.write(f"element vertex {len(vertices)}\n")
+        f.write("property float x\n")
+        f.write("property float y\n")
+        f.write("property float z\n")
+        f.write("property uchar red\n")
+        f.write("property uchar green\n")
+        f.write("property uchar blue\n")
+        f.write("property uchar alpha\n")
+        f.write("end_header\n")
+        for x, y, z in vertices:
+            f.write(f"{x:.6f} {y:.6f} {z:.6f} 128 128 128 255\n")
 
 
 def run_3ddfa_to_obj(input_img: Path, output_obj: Path) -> Path:
@@ -99,7 +141,15 @@ def run_obj_to_ply(input_obj: Path, output_ply: Path, density: float = 1.0) -> P
         "-f",
         "ascii",
     ]
-    run_cmd(cmd)
+    try:
+        run_cmd(cmd)
+    except PipelineError as exc:
+        # Some repositories ship a prebuilt macOS ModelTransformer binary.
+        # Fallback keeps the pipeline runnable on Linux by exporting vertices as ASCII PLY.
+        if "Exec format error" in str(exc) or "cannot execute" in str(exc):
+            convert_obj_to_ascii_ply(input_obj, output_ply)
+        else:
+            raise
     if not output_ply.exists() or output_ply.stat().st_size == 0:
         raise PipelineError("PLY_NOT_GENERATED", f"PLY output missing: {output_ply}")
     return output_ply

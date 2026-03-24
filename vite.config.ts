@@ -6,6 +6,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
+    watch: {
+      ignored: ['**/.venv/**', '**/__pycache__/**', '**/backend/artifacts/**', '**/backend/uploads/**'],
+    },
     proxy: {
       '/api/v1': {
         target: 'http://localhost:8000',
