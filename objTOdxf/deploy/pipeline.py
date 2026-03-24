@@ -152,7 +152,14 @@ def equalize_gray(gray_grid: np.ndarray) -> np.ndarray:
     cdf = hist.cumsum().astype(np.float64)
     cdf_min = float(cdf[cdf > 0].min())
     total   = float(valid_mask.sum())
-    cdf_norm = np.clip((cdf - cdf_min) / (total - cdf_min + 1e-9) * 255.0, 0, 255)
+
+    # Constant-intensity input (all valid pixels share one gray value)
+    # makes (total - cdf_min) = 0. Keep original grayscale to avoid
+    # collapsing everything to black and producing empty DXF entities.
+    if total <= cdf_min + 1e-9:
+        return gray_grid.copy()
+
+    cdf_norm = np.clip((cdf - cdf_min) / (total - cdf_min) * 255.0, 0, 255)
 
     out = gray_grid.copy()
     idx = np.clip(gray_grid[valid_mask].astype(np.int32), 0, 255)

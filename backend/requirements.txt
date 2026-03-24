@@ -2,3 +2,15 @@ fastapi==0.116.1
 uvicorn[standard]==0.35.0
 python-multipart==0.0.20
 pydantic==2.11.7
+opencv-python==4.10.0.84
+torch==2.11.0
+torchvision==0.26.0
+matplotlib==3.10.8
+imageio==2.37.3
+imageio-ffmpeg==0.6.0
+pyyaml==6.0.3
+tqdm==4.67.3
+cython==3.2.4
+scikit-image==0.26.0
+scipy==1.17.1
+onnxruntime==1.24.4

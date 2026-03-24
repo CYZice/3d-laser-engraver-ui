@@ -8,6 +8,18 @@ dependencies = [
     "uvicorn[standard]>=0.23.0",
     "pydantic>=2.0.0",
     "python-multipart>=0.0.6",
+    "opencv-python>=4.10.0",
+    "torch>=2.11.0",
+    "torchvision>=0.26.0",
+    "matplotlib>=3.10.0",
+    "imageio>=2.37.0",
+    "imageio-ffmpeg>=0.6.0",
+    "pyyaml>=6.0.0",
+    "tqdm>=4.67.0",
+    "cython>=3.0.0",
+    "scikit-image>=0.26.0",
+    "scipy>=1.17.0",
+    "onnxruntime>=1.24.0",
 ]
 
 [project.optional-dependencies]

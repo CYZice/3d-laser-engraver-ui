@@ -1,11 +1,32 @@
 import { getTaskStatus } from '@/services/conversion';
 import { useAppStore } from '@/store/useAppStore';
+import { message } from 'antd';
 import { useEffect, useRef } from 'react';
 
 export const usePolling = () => {
   const { taskId, step, updateProgress, completeTask, failTask } = useAppStore();
   const timerRef = useRef<number | null>(null);
   const failureCountRef = useRef(0);
+
+  const simplifyError = (raw?: string): string => {
+    if (!raw) return 'Task failed.';
+    const lines = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const moduleError = lines.find((line) =>
+      line.includes('ModuleNotFoundError') || line.includes('ImportError')
+    );
+    if (moduleError) return moduleError;
+
+    const tracebackHint = [...lines]
+      .reverse()
+      .find((line) => !line.startsWith('File "') && !line.startsWith('Traceback'));
+    if (tracebackHint) return tracebackHint;
+
+    return lines[0] || 'Task failed.';
+  };
 
   useEffect(() => {
     if (step !== 'PROCESSING' || !taskId) {
@@ -44,7 +65,9 @@ export const usePolling = () => {
         }
 
         if (payload.status === 'FAILED') {
-          failTask(payload.error?.message || 'Task failed.');
+          const errMsg = simplifyError(payload.error?.message);
+          failTask(errMsg);
+          message.error(`Processing failed: ${errMsg}`);
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
@@ -54,7 +77,9 @@ export const usePolling = () => {
         console.error(err);
         failureCountRef.current += 1;
         if (failureCountRef.current >= 3) {
-          failTask('Network or backend error. Please retry.');
+          const errMsg = 'Network or backend error. Please retry.';
+          failTask(errMsg);
+          message.error(errMsg);
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
