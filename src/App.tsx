@@ -22,6 +22,21 @@ function App() {
   const orderId = useAppStore((s) => s.orderId);
   const result = useAppStore((s) => s.result);
 
+  const params = new URLSearchParams(window.location.search);
+  const debugDxf = params.get('debugDxf');
+  const debugPreview = params.get('debugPreview') || '';
+
+  if (debugDxf) {
+    return (
+      <ResultTicket
+        orderId={'DEBUG'}
+        onDone={reset}
+        dxfUrl={debugDxf}
+        fallbackImgUrl={debugPreview}
+      />
+    );
+  }
+
   // Global Idle Timeout
   useEffect(() => {
     let timer: NodeJS.Timeout;
