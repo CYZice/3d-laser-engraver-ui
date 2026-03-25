@@ -54,59 +54,6 @@ def run_cmd(
         ) from exc
 
 
-def convert_obj_to_ascii_ply(input_obj: Path, output_ply: Path) -> None:
-    vertices: list[tuple[float, float, float, int, int, int]] = []
-    with input_obj.open("r", encoding="utf-8", errors="ignore") as f:
-        for line in f:
-            s = line.strip()
-            if not s.startswith("v "):
-                continue
-            parts = s.split()
-            if len(parts) < 4:
-                continue
-            try:
-                # 尝试解析坐标 (x, y, z)
-                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
-                # 尝试解析颜色 (r, g, b)，如果不存在则保持中等灰色 (128)
-                r, g, b = 128, 128, 128
-                if len(parts) >= 7:
-                    # 3DDFA 的 OBJ 颜色通常是 0-1 的浮点数或 0-255 整数
-                    # 我们尝试兼容处理
-                    r = int(float(parts[4]) * (255 if float(parts[4]) <= 1.0 else 1.0))
-                    g = int(float(parts[5]) * (255 if float(parts[5]) <= 1.0 else 1.0))
-                    b = int(float(parts[6]) * (255 if float(parts[6]) <= 1.0 else 1.0))
-                    # 限制在 0-255
-                    r, g, b = (
-                        max(0, min(255, r)),
-                        max(0, min(255, g)),
-                        max(0, min(255, b)),
-                    )
-            except (ValueError, IndexError):
-                continue
-            vertices.append((x, y, z, r, g, b))
-
-    if not vertices:
-        raise PipelineError(
-            "PLY_NOT_GENERATED", f"No vertices parsed from OBJ: {input_obj}"
-        )
-
-    output_ply.parent.mkdir(parents=True, exist_ok=True)
-    with output_ply.open("w", encoding="utf-8") as f:
-        f.write("ply\n")
-        f.write("format ascii 1.0\n")
-        f.write(f"element vertex {len(vertices)}\n")
-        f.write("property float x\n")
-        f.write("property float y\n")
-        f.write("property float z\n")
-        f.write("property uchar red\n")
-        f.write("property uchar green\n")
-        f.write("property uchar blue\n")
-        f.write("property uchar alpha\n")
-        f.write("end_header\n")
-        for x, y, z, r, g, b in vertices:
-            f.write(f"{x:.6f} {y:.6f} {z:.6f} {r} {g} {b} 255\n")
-
-
 def run_3ddfa_to_obj(input_img: Path, output_obj: Path) -> Path:
     ensure_paths()
 
@@ -156,15 +103,7 @@ def run_obj_to_ply(input_obj: Path, output_ply: Path, density: float = 1.0) -> P
         "-f",
         "ascii",
     ]
-    try:
-        run_cmd(cmd)
-    except PipelineError as exc:
-        # Some repositories ship a prebuilt macOS ModelTransformer binary.
-        # Fallback keeps the pipeline runnable on Linux by exporting vertices as ASCII PLY.
-        if "Exec format error" in str(exc) or "cannot execute" in str(exc):
-            convert_obj_to_ascii_ply(input_obj, output_ply)
-        else:
-            raise
+    run_cmd(cmd)
     if not output_ply.exists() or output_ply.stat().st_size == 0:
         raise PipelineError("PLY_NOT_GENERATED", f"PLY output missing: {output_ply}")
     return output_ply

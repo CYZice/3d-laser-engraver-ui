@@ -13,6 +13,10 @@ interface CrystalViewerProps {
 }
 
 const DEFAULT_TARGET_SIZE: [number, number, number] = [5, 8, 5];
+const DEFAULT_POINT_SIZE = 0.03;
+const DEFAULT_POINT_OPACITY = 0.18;
+const DEFAULT_POINT_DENSITY = 1;
+const DEFAULT_BACKGROUND = '#05070a';
 
 export const CrystalViewer: React.FC<CrystalViewerProps> = ({
     dxfUrl,
@@ -24,6 +28,9 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
     const [loading, setLoading] = useState<boolean>(true);
     const [errorObj, setErrorObj] = useState<string | null>(null);
     const [positions, setPositions] = useState<Float32Array | null>(null);
+    const [pointSize, setPointSize] = useState<number>(DEFAULT_POINT_SIZE);
+    const [pointOpacity, setPointOpacity] = useState<number>(DEFAULT_POINT_OPACITY);
+    const [pointDensity, setPointDensity] = useState<number>(DEFAULT_POINT_DENSITY);
 
     const workerRef = useRef<Worker | null>(null);
 
@@ -163,8 +170,79 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                     }, false);
                 }}
             >
-                <CrystalScene positions={positions} targetSize={targetSize} />
+                <CrystalScene
+                    positions={positions}
+                    targetSize={targetSize}
+                    pointSize={pointSize}
+                    pointOpacity={pointOpacity}
+                    pointDensity={pointDensity}
+                    backgroundColor={DEFAULT_BACKGROUND}
+                />
             </Canvas>
+            {!loading && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 14,
+                        right: 16,
+                        zIndex: 12,
+                        color: '#aaa',
+                        fontSize: 12,
+                        lineHeight: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        pointerEvents: 'auto',
+                        userSelect: 'none'
+                    }}
+                >
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        点透明度
+                        <input
+                            type="range"
+                            min={0.02}
+                            max={0.5}
+                            step={0.01}
+                            value={pointOpacity}
+                            onChange={(e) => setPointOpacity(parseFloat(e.target.value))}
+                            style={{ width: 120, cursor: 'pointer', accentColor: '#888' }}
+                        />
+                        <span style={{ width: 44, display: 'inline-block', textAlign: 'right' }}>
+                            {pointOpacity.toFixed(2)}
+                        </span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        点大小
+                        <input
+                            type="range"
+                            min={0.01}
+                            max={0.12}
+                            step={0.005}
+                            value={pointSize}
+                            onChange={(e) => setPointSize(parseFloat(e.target.value))}
+                            style={{ width: 120, cursor: 'pointer', accentColor: '#888' }}
+                        />
+                        <span style={{ width: 44, display: 'inline-block', textAlign: 'right' }}>
+                            {pointSize.toFixed(3)}
+                        </span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        点密度
+                        <input
+                            type="range"
+                            min={0.05}
+                            max={1}
+                            step={0.05}
+                            value={pointDensity}
+                            onChange={(e) => setPointDensity(parseFloat(e.target.value))}
+                            style={{ width: 120, cursor: 'pointer', accentColor: '#888' }}
+                        />
+                        <span style={{ width: 44, display: 'inline-block', textAlign: 'right' }}>
+                            {Math.round(pointDensity * 100)}%
+                        </span>
+                    </label>
+                </div>
+            )}
         </div>
     );
 };

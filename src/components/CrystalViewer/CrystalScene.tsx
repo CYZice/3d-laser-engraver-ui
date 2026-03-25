@@ -6,9 +6,20 @@ import * as THREE from 'three';
 interface CrystalSceneProps {
     positions: Float32Array | null;
     targetSize: [number, number, number]; // e.g. [5, 8, 5]
+    pointSize: number;
+    pointOpacity: number;
+    pointDensity: number;
+    backgroundColor: string;
 }
 
-export const CrystalScene: React.FC<CrystalSceneProps> = ({ positions, targetSize }) => {
+export const CrystalScene: React.FC<CrystalSceneProps> = ({
+    positions,
+    targetSize,
+    pointSize,
+    pointOpacity,
+    pointDensity,
+    backgroundColor
+}) => {
     const groupRef = useRef<THREE.Group>(null);
     const geometryRef = useRef<THREE.BufferGeometry>(null);
     const materialRef = useRef<THREE.PointsMaterial>(null);
@@ -33,9 +44,16 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({ positions, targetSiz
         };
     }, []);
 
+    useEffect(() => {
+        if (!geometryRef.current || !positions) return;
+        const total = positions.length / 3;
+        const visible = Math.max(1, Math.floor(total * pointDensity));
+        geometryRef.current.setDrawRange(0, visible);
+    }, [positions, pointDensity]);
+
     return (
         <>
-            <color attach="background" args={['#e0e0e0']} />
+            <color attach="background" args={[backgroundColor]} />
 
             {/* 光影映射: 高光展柜风格的 HDRI (Rule 2.2) */}
             <Environment preset="studio" />
@@ -73,10 +91,14 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({ positions, targetSiz
                             </bufferGeometry>
                             <pointsMaterial
                                 ref={materialRef}
-                                size={0.03}
-                                color="#000000" // 换成强烈的对比色（深色），如果是白底
-                                transparent={false}
+                                size={pointSize}
+                                color="#ffffff"
+                                transparent={true}
+                                opacity={pointOpacity}
+                                blending={THREE.AdditiveBlending}
+                                depthWrite={false}
                                 sizeAttenuation={true} // 保持近大远小的透视感
+                                toneMapped={false}
                             />
                         </points>
                     )}
