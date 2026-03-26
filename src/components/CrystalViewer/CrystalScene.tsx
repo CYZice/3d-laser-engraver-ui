@@ -3,9 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+// 1. 修复第一个错误：显式定义接口 CrystalSceneProps
 interface CrystalSceneProps {
     positions: Float32Array | null;
-    targetSize: [number, number, number]; // e.g. [5, 8, 5]
+    targetSize: [number, number, number];
     pointSize: number;
     pointOpacity: number;
     pointDensity: number;
@@ -14,7 +15,7 @@ interface CrystalSceneProps {
 
 export const CrystalScene: React.FC<CrystalSceneProps> = ({
     positions,
-    targetSize,
+    targetSize: _targetSize,
     pointSize,
     pointOpacity,
     pointDensity,
@@ -24,23 +25,16 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
     const geometryRef = useRef<THREE.BufferGeometry>(null);
     const materialRef = useRef<THREE.PointsMaterial>(null);
 
-    // 待机自转动画 (Idle state interaction)
     useFrame((_state, delta) => {
         if (groupRef.current) {
-            // 1.5 degrees per second = approx 0.026 rad/sec
             groupRef.current.rotation.y += delta * (Math.PI / 120);
         }
     });
 
-    // 显存回收治理 (Performance & Fallback - Rule 4.2)
     useEffect(() => {
         return () => {
-            if (geometryRef.current) {
-                geometryRef.current.dispose();
-            }
-            if (materialRef.current) {
-                materialRef.current.dispose();
-            }
+            if (geometryRef.current) geometryRef.current.dispose();
+            if (materialRef.current) materialRef.current.dispose();
         };
     }, []);
 
@@ -53,34 +47,19 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
 
     return (
         <>
+            {/* 2. 修复第二个错误：使用 backgroundColor 变量 */}
             <color attach="background" args={[backgroundColor]} />
 
-            {/* 光影映射: 高光展柜风格的 HDRI (Rule 2.2) */}
             <Environment preset="studio" />
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} intensity={1.5} />
 
-            <ambientLight intensity={1.5} />
-            <directionalLight position={[10, 10, 5]} intensity={2} />
-
-            {/* 配合极微弱的上下悬浮动效 */}
             <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2} floatingRange={[-0.1, 0.1]}>
                 <group ref={groupRef}>
-                    {/* 玻璃外部模型 (Rule 2.1) */}
-                    <mesh>
-                        <boxGeometry args={targetSize} />
-                        <meshPhysicalMaterial
-                            transmission={1}   // 物理级透射
-                            ior={1.5}          // 玻璃折射率 (IOR)
-                            roughness={0.1}    // 清漆感，略微的粗糙度呈现质感
-                            thickness={2}      // 透射体积厚度
-                            clearcoat={1}      // 表层高光
-                            clearcoatRoughness={0.1}
-                            color="#ffffff"
-                        />
-                    </mesh>
 
-                    {/* 内部点云实体 */}
+                    {/* 内部白色点云 */}
                     {positions && (
-                        <points frustumCulled={false}>
+                        <points frustumCulled={false} renderOrder={1}>
                             <bufferGeometry ref={geometryRef}>
                                 <bufferAttribute
                                     attach="attributes-position"
@@ -92,26 +71,27 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                             <pointsMaterial
                                 ref={materialRef}
                                 size={pointSize}
-                                color="#ffffff"
+                                color="#ffffff"              // 强烈要求：白色点
                                 transparent={true}
                                 opacity={pointOpacity}
-                                blending={THREE.AdditiveBlending}
-                                depthWrite={false}
-                                sizeAttenuation={true} // 保持近大远小的透视感
-                                toneMapped={false}
+                                sizeAttenuation={true}
+
+                                // --- 解决“白色不见了”的关键方案 ---
+                                blending={THREE.AdditiveBlending} // 加法混合，让点在玻璃内部“发光”
+                                depthWrite={false}               // 关闭深度写入，防止遮挡错误
+                                toneMapped={false}               // 避免被场景渲染器压暗
                             />
                         </points>
                     )}
                 </group>
             </Float>
 
-            {/* 用户干预检视 (Active Inspect - Rule 3.4) */}
             <OrbitControls
-                enablePan={false}     // 强制禁用平移 (绝对不允许模型被拖出视口)
-                enableDamping={true}  // 开启阻尼惯性
+                enablePan={false}
+                enableDamping={true}
                 dampingFactor={0.05}
-                minDistance={10}      // 距离钳制 (最近距离)
-                maxDistance={25}      // 距离钳制 (最远距离)
+                minDistance={5}
+                maxDistance={30}
             />
         </>
     );

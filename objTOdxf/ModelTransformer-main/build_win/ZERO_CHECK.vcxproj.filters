@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Microsoft VS Code\3D-laser\objTOdxf\ModelTransformer-main\build_win\CMakeFiles\c98891c89e12249ee9a2d36338cc6b17\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{B0EDEC17-3503-3B6C-99AD-F0B87A574416}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

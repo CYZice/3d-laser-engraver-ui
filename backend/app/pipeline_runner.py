@@ -66,17 +66,20 @@ def run_3ddfa_to_obj(input_img: Path, output_obj: Path) -> Path:
     task_input = examples_inputs / f"{task_stem}{input_img.suffix.lower() or '.jpg'}"
     task_input.write_bytes(input_img.read_bytes())
 
+    # 3DDFA_V2 需要在其根目录下运行，以确保相对路径（如 configs/mb1_120x120.yml 和 weights/...）能被正确解析
+    task_input_rel = task_input.relative_to(THREEDFFA_DIR).as_posix()
+
     cmd = [
         sys.executable,
         "demo.py",
         "-f",
-        str(task_input),
+        task_input_rel,
         "-o",
         "obj",
         "--show_flag",
         "false",
     ]
-    run_cmd(cmd, cwd=THREEDFFA_DIR)
+    run_cmd(cmd, cwd=THREEDFFA_DIR) # 在 3DDFA_V2-master 目录下执行
 
     generated = examples_results / f"{task_stem}_obj.obj"
     if not generated.exists() or generated.stat().st_size == 0:

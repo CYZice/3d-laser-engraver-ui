@@ -27,10 +27,10 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-# 启动后端
+# 启动后端（直接使用当前环境，不做依赖同步/自动安装）
 echo "[1/2] Starting Backend (FastAPI) on http://localhost:8000"
 cd "$SCRIPT_DIR/backend"
-./start.sh &
+python -m uvicorn app.main:app --reload --port 8000 --host 0.0.0.0 &
 BACKEND_PID=$!
 
 # 等待后端进程拉起
@@ -72,7 +72,7 @@ fi
 echo ""
 echo "[2/2] Starting Frontend (Vite) on http://localhost:5173"
 cd "$SCRIPT_DIR"
-npx vite &
+npm run dev &
 FRONTEND_PID=$!
 
 sleep 1

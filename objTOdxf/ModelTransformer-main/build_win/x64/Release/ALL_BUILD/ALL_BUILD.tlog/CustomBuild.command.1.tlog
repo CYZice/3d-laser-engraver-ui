@@ -1,0 +1,10 @@
+^D:\MICROSOFT VS CODE\3D-LASER\OBJTODXF\MODELTRANSFORMER-MAIN\CMAKELISTS.TXT
+setlocal
+D:\C++\IDE\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-SD:/Microsoft VS Code/3D-laser/objTOdxf/ModelTransformer-main" "-BD:/Microsoft VS Code/3D-laser/objTOdxf/ModelTransformer-main/build_win" --check-stamp-file "D:/Microsoft VS Code/3D-laser/objTOdxf/ModelTransformer-main/build_win/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

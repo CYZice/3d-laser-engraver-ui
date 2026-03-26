@@ -13,10 +13,10 @@ interface CrystalViewerProps {
 }
 
 const DEFAULT_TARGET_SIZE: [number, number, number] = [5, 8, 5];
-const DEFAULT_POINT_SIZE = 0.03;
-const DEFAULT_POINT_OPACITY = 0.18;
+const DEFAULT_POINT_SIZE = 0.06;
+const DEFAULT_POINT_OPACITY = 0.35;
 const DEFAULT_POINT_DENSITY = 1;
-const DEFAULT_BACKGROUND = '#05070a';
+const DEFAULT_BACKGROUND = '#000000';
 
 export const CrystalViewer: React.FC<CrystalViewerProps> = ({
     dxfUrl,
@@ -201,7 +201,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                         <input
                             type="range"
                             min={0.02}
-                            max={0.5}
+                            max={1}
                             step={0.01}
                             value={pointOpacity}
                             onChange={(e) => setPointOpacity(parseFloat(e.target.value))}

@@ -12,18 +12,24 @@ OBJ_TO_DXF_DIR = PROJECT_ROOT / "objTOdxf"
 
 
 def get_model_transformer_bin() -> Path:
-    # 优先检测本地编译目录
-    linux_build = (
-        OBJ_TO_DXF_DIR / "ModelTransformer-main" / "build_linux" / "ModelTransformer"
-    )
-    if linux_build.exists():
-        return linux_build
+    model_root = OBJ_TO_DXF_DIR / "ModelTransformer-main"
+    is_windows = platform.system().lower().startswith("win")
 
-    # 兜底旧路径
-    default_build = (
-        OBJ_TO_DXF_DIR / "ModelTransformer-main" / "build" / "ModelTransformer"
-    )
-    return default_build
+    windows_candidates = [
+        model_root / "build_win" / "Release" / "ModelTransformer.exe",
+        model_root / "build" / "Release" / "ModelTransformer.exe",
+    ]
+    linux_candidates = [
+        model_root / "build_linux" / "ModelTransformer",
+        model_root / "build" / "ModelTransformer",
+    ]
+
+    candidates = windows_candidates if is_windows else linux_candidates
+    for path in candidates:
+        if path.exists():
+            return path
+
+    return candidates[0]
 
 
 MODEL_TRANSFORMER_BIN = get_model_transformer_bin()

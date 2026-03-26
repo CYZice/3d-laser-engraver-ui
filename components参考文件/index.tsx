@@ -1,0 +1,170 @@
+import { Canvas } from '@react-three/fiber';
+import React, { useEffect, useRef, useState } from 'react';
+import { checkWebGLSupport } from '../../utils/webglChecker';
+import { CrystalScene } from './CrystalScene';
+import { DxfWorkerInput, DxfWorkerOutput } from './dxfParser.worker';
+import DxfWorker from './dxfParser.worker?worker';
+
+interface CrystalViewerProps {
+    dxfUrl: string;
+    fallbackImgUrl: string;
+    targetSize?: [number, number, number];
+    zIndex?: number;
+}
+
+const DEFAULT_TARGET_SIZE: [number, number, number] = [5, 8, 5];
+
+export const CrystalViewer: React.FC<CrystalViewerProps> = ({
+    dxfUrl,
+    fallbackImgUrl,
+    targetSize = DEFAULT_TARGET_SIZE,
+    zIndex = 1
+}) => {
+    const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [errorObj, setErrorObj] = useState<string | null>(null);
+    const [positions, setPositions] = useState<Float32Array | null>(null);
+
+    const workerRef = useRef<Worker | null>(null);
+
+    // 1. 初始化检测 WebGL 兼容性 (Rule 4.3)
+    useEffect(() => {
+        const isSupported = checkWebGLSupport();
+        setWebGLSupported(isSupported);
+    }, []);
+
+    // 2. Web Worker 处理 DXF 点云解析 (Rule 4.1)
+    useEffect(() => {
+        if (!webGLSupported) return;
+        if (!dxfUrl) {
+            setErrorObj('模型数据缺失');
+            setLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+        setLoading(true);
+        setErrorObj(null);
+
+        // Defensive check: ensure worker only initialized once per url
+        try {
+            workerRef.current = new DxfWorker();
+
+            workerRef.current.onmessage = (e: MessageEvent<DxfWorkerOutput>) => {
+                if (!isMounted) return;
+                const result = e.data;
+                console.log("[CrystalViewer] Worker returned result type:", result.type);
+                if (result.type === 'PARSE_SUCCESS' && result.payload) {
+                    console.log("[CrystalViewer] Points received:", result.payload.pointCount);
+                    setPositions(result.payload.positions);
+                    setLoading(false);
+                } else {
+                    console.error('[CrystalViewer] Worker error:', result.error);
+                    setErrorObj(result.error || 'Unknown parsing error');
+                    setLoading(false);
+                }
+            };
+
+            workerRef.current.onerror = (e) => {
+                if (!isMounted) return;
+                console.error('[CrystalViewer] Worker critical failure:', e);
+                setErrorObj(e.message || 'Worker critical failure');
+                setLoading(false);
+            };
+
+            // 发送解析任务
+            console.log("[CrystalViewer] Sending DXF URL to worker:", dxfUrl);
+            const payload: DxfWorkerInput = {
+                type: 'PARSE_DXF',
+                payload: { url: dxfUrl, targetSize }
+            };
+            workerRef.current.postMessage(payload);
+
+        } catch (err: any) {
+            if (!isMounted) return;
+            console.error('[CrystalViewer] Error initializing Worker:', err);
+            setErrorObj(err.message);
+            setLoading(false);
+        }
+
+        return () => {
+            isMounted = false;
+            // Rule 4.2 显存与线程回收
+            workerRef.current?.terminate();
+            workerRef.current = null;
+        };
+    }, [dxfUrl, webGLSupported, targetSize]);
+
+    // 3. Fallback 渲染 (WebGL 不支持 或 Context Lost)
+    if (!webGLSupported || errorObj) {
+        return (
+            <div
+                style={{ zIndex, position: 'absolute', inset: 0, backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
+            >
+                {fallbackImgUrl ? (
+                    <img
+                        src={fallbackImgUrl}
+                        alt="3D Crystal Fallback Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                            // 防御性：如果连静态图都加载失败
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                ) : (
+                    <div style={{ color: '#666', fontSize: '1.2rem', padding: '20px' }}>预览内容不可用</div>
+                )}
+                {errorObj && (
+                    <div style={{ position: 'absolute', bottom: 20, color: 'red', fontSize: '12px', background: 'rgba(255,255,255,0.7)', padding: '4px 8px', borderRadius: 4 }}>
+                        3D Viewer Error: {errorObj}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex }}>
+            {/* Rule 3.1: 骨架屏加载期 (Loading State) */}
+            {loading && (
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(224, 224, 224, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    color: '#333',
+                    fontSize: '1.2rem',
+                    letterSpacing: '2px'
+                }}>
+                    {/* 优雅的 Loading 动效 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <div className="spinner" style={{ width: 40, height: 40, border: '3px solid #ccc', borderTopColor: '#333', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        <span>模型解析中...</span>
+                    </div>
+                    <style>{`
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+                </div>
+            )}
+
+            {/* Rule 3.2: 顺滑的渐现 (通过 R3F Canvas 挂载) */}
+            <Canvas
+                camera={{ position: [0, 0, 15], fov: 45 }}
+                onCreated={({ gl }) => {
+                    // Rule 4.3: WebGL Context Lost 致命错误降级
+                    gl.domElement.addEventListener('webglcontextlost', (e) => {
+                        e.preventDefault();
+                        console.warn('[CrystalViewer] WebGL Context Lost! Initiating graceful fallback.');
+                        setWebGLSupported(false);
+                    }, false);
+                }}
+            >
+                <CrystalScene positions={positions} targetSize={targetSize} />
+            </Canvas>
+        </div>
+    );
+};

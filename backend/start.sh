@@ -37,8 +37,16 @@ else
         echo "[1/3] Virtual environment already exists"
     fi
 
-    # shellcheck disable=SC1091
-    source .venv/bin/activate
+    if [ -f ".venv/Scripts/activate" ]; then
+        # shellcheck disable=SC1091
+        source .venv/Scripts/activate
+    elif [ -f ".venv/bin/activate" ]; then
+        # shellcheck disable=SC1091
+        source .venv/bin/activate
+    else
+        echo "Error: Cannot find virtual environment activation script."
+        exit 1
+    fi
 
     echo "[2/3] Installing backend dependencies..."
     python -m pip install --upgrade pip

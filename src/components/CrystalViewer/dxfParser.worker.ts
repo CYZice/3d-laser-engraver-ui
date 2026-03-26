@@ -127,10 +127,29 @@ export const processDxfData = async (url: string, targetSize: [number, number, n
             positions[idx + 2] = (positions[idx + 2] - centerZ) * uniformScale;
         }
 
+        // Shuffle points to allow uniform density adjustment (Rule: reference gen_3d_html.py logic)
+        // Fisher-Yates shuffle on the indices
+        const indices = new Uint32Array(pointCount);
+        for (let i = 0; i < pointCount; i++) indices[i] = i;
+
+        for (let i = pointCount - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+
+        const shuffledPositions = new Float32Array(pointCount * 3);
+        for (let i = 0; i < pointCount; i++) {
+            const oldIdx = indices[i] * 3;
+            const newIdx = i * 3;
+            shuffledPositions[newIdx] = positions[oldIdx];
+            shuffledPositions[newIdx + 1] = positions[oldIdx + 1];
+            shuffledPositions[newIdx + 2] = positions[oldIdx + 2];
+        }
+
         return {
             type: 'PARSE_SUCCESS',
             payload: {
-                positions,
+                positions: shuffledPositions,
                 pointCount: pointCount,
                 boundingSize: [currentWidth * uniformScale, currentHeight * uniformScale, currentDepth * uniformScale]
             }
