@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-// 1. 修复第一个错误：显式定义接口 CrystalSceneProps
 interface CrystalSceneProps {
     positions: Float32Array | null;
     targetSize: [number, number, number];
@@ -15,12 +14,13 @@ interface CrystalSceneProps {
 
 export const CrystalScene: React.FC<CrystalSceneProps> = ({
     positions,
-    targetSize: _targetSize,
+    targetSize,
     pointSize,
     pointOpacity,
     pointDensity,
     backgroundColor
 }) => {
+    const crystalScale = 1.35;
     const groupRef = useRef<THREE.Group>(null);
     const geometryRef = useRef<THREE.BufferGeometry>(null);
     const materialRef = useRef<THREE.PointsMaterial>(null);
@@ -47,17 +47,14 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
 
     return (
         <>
-            {/* 2. 修复第二个错误：使用 backgroundColor 变量 */}
             <color attach="background" args={[backgroundColor]} />
-
-            <Environment preset="studio" />
-            <ambientLight intensity={0.5} />
+            <Environment preset="city" />
+            <ambientLight intensity={0.45} />
             <pointLight position={[10, 10, 10]} intensity={1.5} />
+            <spotLight position={[-10, 10, 10]} intensity={2} angle={0.3} penumbra={1} />
 
             <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2} floatingRange={[-0.1, 0.1]}>
                 <group ref={groupRef}>
-
-                    {/* 内部白色点云 */}
                     {positions && (
                         <points frustumCulled={false} renderOrder={1}>
                             <bufferGeometry ref={geometryRef}>
@@ -71,18 +68,37 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                             <pointsMaterial
                                 ref={materialRef}
                                 size={pointSize}
-                                color="#ffffff"              // 强烈要求：白色点
+                                color="#ffffff"
                                 transparent={true}
                                 opacity={pointOpacity}
                                 sizeAttenuation={true}
-
-                                // --- 解决“白色不见了”的关键方案 ---
-                                blending={THREE.AdditiveBlending} // 加法混合，让点在玻璃内部“发光”
-                                depthWrite={false}               // 关闭深度写入，防止遮挡错误
-                                toneMapped={false}               // 避免被场景渲染器压暗
+                                blending={THREE.AdditiveBlending}
+                                depthWrite={false}
+                                toneMapped={false}
                             />
                         </points>
                     )}
+                    <mesh renderOrder={2}>
+                        <boxGeometry
+                            args={[
+                                Math.max(targetSize[0] * crystalScale, 1.6),
+                                Math.max(targetSize[1] * crystalScale, 2.0),
+                                Math.max(targetSize[2] * crystalScale, 1.3)
+                            ]}
+                        />
+                        <meshPhysicalMaterial
+                            transparent={true}
+                            opacity={0.3}
+                            roughness={0}
+                            metalness={0.08}
+                            clearcoat={1}
+                            clearcoatRoughness={0.1}
+                            ior={1.5}
+                            depthWrite={false}
+                            side={THREE.DoubleSide}
+                            color="#e0f7fa"
+                        />
+                    </mesh>
                 </group>
             </Float>
 
@@ -90,7 +106,7 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                 enablePan={false}
                 enableDamping={true}
                 dampingFactor={0.05}
-                minDistance={5}
+                minDistance={7}
                 maxDistance={30}
             />
         </>

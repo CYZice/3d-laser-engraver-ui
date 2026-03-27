@@ -90,4 +90,4 @@ PREVIEW_URL="$(printf '%s' "$FINAL_JSON" | python -c "import sys,json; d=json.lo
 
 echo "DXF=$HOST_BASE$DXF_URL"
 echo "PREVIEW=$HOST_BASE$PREVIEW_URL"
-echo "RENDER_URL=http://localhost:5174/?debugDxf=$DXF_URL&debugPreview=$PREVIEW_URL"
+echo "RENDER_URL=http://localhost:5173/?debugDxf=$DXF_URL&debugPreview=$PREVIEW_URL"

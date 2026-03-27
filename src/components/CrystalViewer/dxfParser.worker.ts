@@ -107,9 +107,9 @@ export const processDxfData = async (url: string, targetSize: [number, number, n
         const centerY = minY + currentHeight / 2;
         const centerZ = minZ + currentDepth / 2;
 
-        const targetWidth = targetSize[0] * 0.9;
-        const targetHeight = targetSize[1] * 0.9;
-        const targetDepth = targetSize[2] * 0.9;
+        const targetWidth = targetSize[0] * 1.05;
+        const targetHeight = targetSize[1] * 1.05;
+        const targetDepth = targetSize[2] * 1.05;
 
         const scaleX = currentWidth > 0 ? targetWidth / currentWidth : 1;
         const scaleY = currentHeight > 0 ? targetHeight / currentHeight : 1;

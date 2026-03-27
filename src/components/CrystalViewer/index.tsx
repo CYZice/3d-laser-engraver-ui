@@ -160,7 +160,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
 
             {/* Rule 3.2: 顺滑的渐现 (通过 R3F Canvas 挂载) */}
             <Canvas
-                camera={{ position: [0, 0, 15], fov: 45 }}
+                camera={{ position: [0, 0, 17], fov: 45 }}
                 onCreated={({ gl }) => {
                     // Rule 4.3: WebGL Context Lost 致命错误降级
                     gl.domElement.addEventListener('webglcontextlost', (e) => {
