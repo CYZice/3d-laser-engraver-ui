@@ -13,7 +13,7 @@ interface CrystalViewerProps {
 }
 
 const DEFAULT_TARGET_SIZE: [number, number, number] = [5, 8, 5];
-const DEFAULT_POINT_SIZE = 0.06;
+const DEFAULT_POINT_SIZE = 0.001;
 const DEFAULT_POINT_OPACITY = 0.35;
 const DEFAULT_POINT_DENSITY = 1;
 const DEFAULT_BACKGROUND = '#0fdcebff';
@@ -215,9 +215,9 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                         点大小
                         <input
                             type="range"
-                            min={0.01}
+                            min={0.0001}
                             max={0.12}
-                            step={0.005}
+                            step={0.0001}
                             value={pointSize}
                             onChange={(e) => setPointSize(parseFloat(e.target.value))}
                             style={{ width: 120, cursor: 'pointer', accentColor: '#888' }}
