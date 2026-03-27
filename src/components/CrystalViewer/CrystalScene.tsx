@@ -48,15 +48,34 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
     return (
         <>
             <color attach="background" args={[backgroundColor]} />
-            <Environment preset="city" />
-            <ambientLight intensity={0.45} />
-            <pointLight position={[10, 10, 10]} intensity={1.5} />
-            <spotLight position={[-10, 10, 10]} intensity={2} angle={0.3} penumbra={1} />
+            <Environment preset="studio" />
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[10, 10, 5]} intensity={1.2} />
+            <pointLight position={[-8, 6, 8]} intensity={0.9} />
 
             <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2} floatingRange={[-0.1, 0.1]}>
                 <group ref={groupRef}>
+                    <mesh renderOrder={2}>
+                        <boxGeometry
+                            args={[
+                                Math.max(targetSize[0] * crystalScale, 1.6),
+                                Math.max(targetSize[1] * crystalScale, 2.0),
+                                Math.max(targetSize[2] * crystalScale, 1.3)
+                            ]}
+                        />
+                        <meshPhysicalMaterial
+                            transmission={1}
+                            ior={1.5}
+                            roughness={0.1}
+                            thickness={2}
+                            metalness={0}
+                            clearcoat={1}
+                            clearcoatRoughness={0.1}
+                            color="#ffffff"
+                        />
+                    </mesh>
                     {positions && (
-                        <points frustumCulled={false} renderOrder={1}>
+                        <points frustumCulled={false} renderOrder={3}>
                             <bufferGeometry ref={geometryRef}>
                                 <bufferAttribute
                                     attach="attributes-position"
@@ -74,11 +93,12 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                                 sizeAttenuation={true}
                                 blending={THREE.AdditiveBlending}
                                 depthWrite={false}
+                                depthTest={false}
                                 toneMapped={false}
                             />
                         </points>
                     )}
-                    <mesh renderOrder={2}>
+                    <mesh renderOrder={4}>
                         <boxGeometry
                             args={[
                                 Math.max(targetSize[0] * crystalScale, 1.6),
@@ -88,15 +108,14 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                         />
                         <meshPhysicalMaterial
                             transparent={true}
-                            opacity={0.3}
+                            opacity={0.16}
                             roughness={0}
                             metalness={0.08}
                             clearcoat={1}
                             clearcoatRoughness={0.1}
-                            ior={1.5}
                             depthWrite={false}
                             side={THREE.DoubleSide}
-                            color="#e0f7fa"
+                            color="#dff8ff"
                         />
                     </mesh>
                 </group>
