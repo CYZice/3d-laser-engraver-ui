@@ -102,7 +102,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
         {imgSrc ? (
           <img
             src={imgSrc}
-            alt="captured"
+            alt="拍摄预览"
             style={{
               width: '100%',
               height: '100%',
@@ -174,7 +174,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
               fontFamily: 'monospace',
               opacity: 0.8
             }}>
-              REC ● [HQ]
+              录制中 ● [高清]
             </div>
             <div style={{
               position: 'absolute',
@@ -185,7 +185,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
               fontFamily: 'monospace',
               opacity: 0.8
             }}>
-              TARGET_LOCK: ACTIVE
+              目标锁定：已激活
             </div>
           </div>
         )}
@@ -217,7 +217,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
             zIndex: 25,
             fontFamily: 'monospace'
           }}>
-            {countdown > 0 ? countdown : 'CAPTURING'}
+            {countdown > 0 ? countdown : '拍摄中'}
           </div>
         )}
       </div>

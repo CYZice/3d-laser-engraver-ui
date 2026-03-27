@@ -23,7 +23,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
     cropper.getCroppedCanvas().toBlob(async (blob) => {
       if (!blob) {
         setLoading(false);
-        message.error('Failed to crop image');
+        message.error('图片裁剪失败');
         return;
       }
 
@@ -34,10 +34,10 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
             onUploadSuccess(res.data.uploadId);
           }
         } else {
-          message.error('Upload failed');
+          message.error('上传失败');
         }
       } catch (error) {
-        message.error('Upload error');
+        message.error('上传异常');
         console.error(error);
       } finally {
         setLoading(false);
@@ -54,14 +54,17 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
       height: '100%',
       padding: '20px'
     }}>
-      <div className="glow-text" style={{
-        alignSelf: 'flex-start',
-        fontSize: '1.5rem',
-        color: 'var(--primary-cyan)',
-        marginBottom: '10px',
-        letterSpacing: '2px'
-      }}>
-        IMAGE_PROCESSOR // EDIT
+      <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }}>
+        <div className="glow-text" style={{
+          fontSize: '1.8rem',
+          color: 'var(--primary-cyan)',
+          letterSpacing: '2px'
+        }}>
+          图像编辑
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'rgba(0,255,255,0.75)', letterSpacing: '2px' }}>
+          IMAGE EDITOR
+        </div>
       </div>
 
       <div className="tech-border" style={{
@@ -100,7 +103,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
             onClick={reset}
             style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
           >
-            RESET
+            重置
           </Button>
           <Button
             ghost
@@ -108,7 +111,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
             icon={<RotateLeftOutlined />}
             onClick={() => handleRotate(-90)}
           >
-            ROTATE L
+            左旋转
           </Button>
           <Button
             ghost
@@ -116,7 +119,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
             icon={<RotateRightOutlined />}
             onClick={() => handleRotate(90)}
           >
-            ROTATE R
+            右旋转
           </Button>
           <Button
             type="primary"
@@ -130,7 +133,7 @@ export const ImageEditor: React.FC<{ onUploadSuccess?: (uploadId: string) => voi
               fontSize: '1.1rem'
             }}
           >
-            PROCESS
+            开始处理
           </Button>
         </Space>
       </div>

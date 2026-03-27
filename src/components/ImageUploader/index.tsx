@@ -16,12 +16,12 @@ export const ImageUploader: React.FC = () => {
     beforeUpload: (file) => {
       const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
       if (!isJpgOrPng) {
-        message.error('You can only upload JPG/PNG file!');
+        message.error('仅支持上传 JPG/PNG 图片');
         return Upload.LIST_IGNORE;
       }
       const isLt20M = file.size / 1024 / 1024 < 20;
       if (!isLt20M) {
-        message.error('Image must smaller than 20MB!');
+        message.error('图片大小不能超过 20MB');
         return Upload.LIST_IGNORE;
       }
       
@@ -37,10 +37,9 @@ export const ImageUploader: React.FC = () => {
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
-        <p className="ant-upload-text">Click or drag file to this area to upload</p>
+        <p className="ant-upload-text">点击或拖拽图片到此区域上传</p>
         <p className="ant-upload-hint">
-          Support for a single or bulk upload. Strictly prohibited from uploading company data or other
-          banned files.
+          支持单张上传，请勿上传敏感信息或受限内容。
         </p>
       </Dragger>
     </div>

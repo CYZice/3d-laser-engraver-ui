@@ -46,9 +46,14 @@ export const PaymentMock: React.FC<PaymentMockProps> = ({ onPaymentSuccess, amou
           background: 'linear-gradient(90deg, transparent, var(--primary-cyan), transparent)'
         }} />
 
-        <h2 className="glow-text" style={{ margin: '0 0 20px 0', color: '#fff', letterSpacing: '2px' }}>
-          {status === 'pending' ? 'SECURE PAYMENT' : 'TRANSACTION COMPLETE'}
-        </h2>
+        <div style={{ margin: '0 0 20px 0' }}>
+          <h2 className="glow-text" style={{ margin: 0, color: '#fff', letterSpacing: '2px' }}>
+            {status === 'pending' ? '安全支付' : '交易完成'}
+          </h2>
+          <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.75)', letterSpacing: '2px', fontSize: '0.85rem' }}>
+            {status === 'pending' ? 'SECURE PAYMENT' : 'TRANSACTION COMPLETE'}
+          </div>
+        </div>
 
         <div style={{
           fontSize: '3rem',
@@ -116,7 +121,7 @@ export const PaymentMock: React.FC<PaymentMockProps> = ({ onPaymentSuccess, amou
             fontFamily: 'monospace'
           }}>
             <Loader2 className="animate-spin" color="var(--primary-cyan)" />
-            <span>WAITING FOR SIGNAL...</span>
+            <span>等待支付确认中...</span>
           </div>
         )}
       </div>
@@ -127,7 +132,7 @@ export const PaymentMock: React.FC<PaymentMockProps> = ({ onPaymentSuccess, amou
         fontSize: '0.8rem',
         letterSpacing: '1px'
       }}>
-        ENCRYPTED CONNECTION ESTABLISHED
+        加密连接已建立
       </div>
     </div>
   );

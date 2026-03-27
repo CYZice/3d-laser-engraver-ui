@@ -9,7 +9,7 @@ export const usePolling = () => {
   const failureCountRef = useRef(0);
 
   const simplifyError = (raw?: string): string => {
-    if (!raw) return 'Task failed.';
+    if (!raw) return '任务失败。';
     const lines = raw
       .split('\n')
       .map((line) => line.trim())
@@ -25,7 +25,7 @@ export const usePolling = () => {
       .find((line) => !line.startsWith('File "') && !line.startsWith('Traceback'));
     if (tracebackHint) return tracebackHint;
 
-    return lines[0] || 'Task failed.';
+    return lines[0] || '任务失败。';
   };
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export const usePolling = () => {
         if (payload.status === 'COMPLETED') {
           const dxfUrl = payload.result?.dxfUrl;
           if (!dxfUrl) {
-            failTask('Task completed but dxfUrl is missing.');
+            failTask('任务已完成，但缺少 dxfUrl。');
           } else {
             completeTask({
               dxfUrl,
@@ -67,7 +67,7 @@ export const usePolling = () => {
         if (payload.status === 'FAILED') {
           const errMsg = simplifyError(payload.error?.message);
           failTask(errMsg);
-          message.error(`Processing failed: ${errMsg}`);
+          message.error(`处理失败：${errMsg}`);
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
@@ -77,7 +77,7 @@ export const usePolling = () => {
         console.error(err);
         failureCountRef.current += 1;
         if (failureCountRef.current >= 3) {
-          const errMsg = 'Network or backend error. Please retry.';
+          const errMsg = '网络或后端异常，请重试。';
           failTask(errMsg);
           message.error(errMsg);
           if (timerRef.current) {

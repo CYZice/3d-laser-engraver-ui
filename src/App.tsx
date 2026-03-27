@@ -99,7 +99,7 @@ function App() {
             amount={29.9}
             onPaymentSuccess={async () => {
               if (!uploadId) {
-                message.error('Upload session missing, please retry.');
+                message.error('上传会话丢失，请重试。');
                 setStep('EDIT');
                 return;
               }
@@ -126,8 +126,8 @@ function App() {
               } catch (err) {
                 console.error(err);
                 const tip = originalFile
-                  ? 'Failed to create task, please try payment again.'
-                  : 'No source image found, please recapture.';
+                  ? '创建任务失败，请重新支付后再试。'
+                  : '未找到源图像，请重新拍摄。';
                 message.error(tip);
                 setStep('EDIT');
               }
@@ -145,7 +145,7 @@ function App() {
       case 'RESULT':
         return (
           <ResultTicket
-            orderId={orderId || 'Unknown'}
+            orderId={orderId || '未知'}
             onDone={reset}
             dxfUrl={result?.dxfUrl || ''}
             fallbackImgUrl={result?.previewImgUrl || ''}

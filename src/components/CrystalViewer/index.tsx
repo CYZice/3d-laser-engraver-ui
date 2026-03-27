@@ -67,7 +67,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                     setLoading(false);
                 } else {
                     console.error('[CrystalViewer] Worker error:', result.error);
-                    setErrorObj(result.error || 'Unknown parsing error');
+                    setErrorObj(result.error || '解析失败');
                     setLoading(false);
                 }
             };
@@ -75,7 +75,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
             workerRef.current.onerror = (e) => {
                 if (!isMounted) return;
                 console.error('[CrystalViewer] Worker critical failure:', e);
-                setErrorObj(e.message || 'Worker critical failure');
+                setErrorObj(e.message || '解析线程异常');
                 setLoading(false);
             };
 
@@ -111,7 +111,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                 {fallbackImgUrl ? (
                     <img
                         src={fallbackImgUrl}
-                        alt="3D Crystal Fallback Preview"
+                        alt="3D 水晶回退预览"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
                             // 防御性：如果连静态图都加载失败
@@ -123,7 +123,7 @@ export const CrystalViewer: React.FC<CrystalViewerProps> = ({
                 )}
                 {errorObj && (
                     <div style={{ position: 'absolute', bottom: 20, color: 'red', fontSize: '12px', background: 'rgba(255,255,255,0.7)', padding: '4px 8px', borderRadius: 4 }}>
-                        3D Viewer Error: {errorObj}
+                        3D 预览错误：{errorObj}
                     </div>
                 )}
             </div>

@@ -156,9 +156,12 @@ export const ResultTicket: React.FC<ResultTicketProps> = ({
 
           <CheckCircle size={60} color="#52c41a" style={{ marginBottom: 15 }} />
 
-          <h1 style={{ margin: 0, fontSize: '2rem' }}>Order Submitted!</h1>
+          <h1 style={{ margin: 0, fontSize: '2rem' }}>订单已提交！</h1>
+          <div style={{ marginTop: 6, fontSize: '0.85rem', color: '#777', letterSpacing: '2px' }}>
+            ORDER SUBMITTED
+          </div>
           <p style={{ fontSize: '1.2rem', color: '#555', marginBottom: 30, marginTop: 10 }}>
-            Please collect your ticket at the counter.
+            请前往柜台领取小票。
           </p>
 
           <div style={{
@@ -168,7 +171,7 @@ export const ResultTicket: React.FC<ResultTicketProps> = ({
             background: 'rgba(255, 255, 255, 0.4)',
             marginBottom: 30
           }}>
-            <div style={{ fontSize: '1rem', color: '#666', textTransform: 'uppercase' }}>Your Order ID</div>
+            <div style={{ fontSize: '1rem', color: '#666' }}>您的订单号</div>
             <div style={{ fontSize: '3.5rem', fontWeight: 'bold', letterSpacing: '3px', color: '#222' }}>
               #{orderId}
             </div>
@@ -176,7 +179,7 @@ export const ResultTicket: React.FC<ResultTicketProps> = ({
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#555' }}>
             <Clock size={20} />
-            <span>Returning to home in {countdown}s</span>
+            <span>{countdown} 秒后返回首页</span>
           </div>
 
           <button
@@ -194,7 +197,7 @@ export const ResultTicket: React.FC<ResultTicketProps> = ({
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
             }}
           >
-            Return Now
+            立即返回
           </button>
         </motion.div>
       )}
