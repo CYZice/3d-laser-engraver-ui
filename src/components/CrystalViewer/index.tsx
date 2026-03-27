@@ -16,7 +16,7 @@ const DEFAULT_TARGET_SIZE: [number, number, number] = [5, 8, 5];
 const DEFAULT_POINT_SIZE = 0.06;
 const DEFAULT_POINT_OPACITY = 0.35;
 const DEFAULT_POINT_DENSITY = 1;
-const DEFAULT_BACKGROUND = '#000000';
+const DEFAULT_BACKGROUND = '#0fdcebff';
 
 export const CrystalViewer: React.FC<CrystalViewerProps> = ({
     dxfUrl,

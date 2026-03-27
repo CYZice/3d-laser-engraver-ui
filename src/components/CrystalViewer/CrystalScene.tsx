@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 interface CrystalSceneProps {
     positions: Float32Array | null;
-    targetSize: [number, number, number];
+    targetSize: [number, number, number]; // e.g. [5, 8, 5]
     pointSize: number;
     pointOpacity: number;
     pointDensity: number;
@@ -17,24 +17,30 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
     targetSize,
     pointSize,
     pointOpacity,
-    pointDensity,
-    backgroundColor
+    pointDensity
 }) => {
-    const crystalScale = 1.35;
+    const crystalScale = 1.22;
     const groupRef = useRef<THREE.Group>(null);
     const geometryRef = useRef<THREE.BufferGeometry>(null);
     const materialRef = useRef<THREE.PointsMaterial>(null);
 
+    // 待机自转动画 (Idle state interaction)
     useFrame((_state, delta) => {
         if (groupRef.current) {
+            // 1.5 degrees per second = approx 0.026 rad/sec
             groupRef.current.rotation.y += delta * (Math.PI / 120);
         }
     });
 
+    // 显存回收治理 (Performance & Fallback - Rule 4.2)
     useEffect(() => {
         return () => {
-            if (geometryRef.current) geometryRef.current.dispose();
-            if (materialRef.current) materialRef.current.dispose();
+            if (geometryRef.current) {
+                geometryRef.current.dispose();
+            }
+            if (materialRef.current) {
+                materialRef.current.dispose();
+            }
         };
     }, []);
 
@@ -47,33 +53,38 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
 
     return (
         <>
-            <color attach="background" args={[backgroundColor]} />
-            <Environment preset="studio" />
-            <ambientLight intensity={0.8} />
-            <directionalLight position={[10, 10, 5]} intensity={1.2} />
-            <pointLight position={[-8, 6, 8]} intensity={0.9} />
+            <color attach="background" args={['#000000']} />
 
+            {/* 光影映射: 高光展柜风格的 HDRI (Rule 2.2) */}
+            <Environment preset="studio" />
+
+            <ambientLight intensity={1.5} />
+            <directionalLight position={[10, 10, 5]} intensity={2} />
+
+            {/* 配合极微弱的上下悬浮动效 */}
             <Float speed={1.5} rotationIntensity={0} floatIntensity={0.2} floatingRange={[-0.1, 0.1]}>
                 <group ref={groupRef}>
+                    {/* 玻璃外部模型 (Rule 2.1) */}
                     <mesh renderOrder={2}>
                         <boxGeometry
                             args={[
-                                Math.max(targetSize[0] * crystalScale, 1.6),
-                                Math.max(targetSize[1] * crystalScale, 2.0),
-                                Math.max(targetSize[2] * crystalScale, 1.3)
+                                targetSize[0] * crystalScale,
+                                targetSize[1] * crystalScale,
+                                targetSize[2] * crystalScale
                             ]}
                         />
                         <meshPhysicalMaterial
-                            transmission={1}
-                            ior={1.5}
-                            roughness={0.1}
-                            thickness={2}
-                            metalness={0}
-                            clearcoat={1}
+                            transmission={1}   // 物理级透射
+                            ior={1.5}          // 玻璃折射率 (IOR)
+                            roughness={0.1}    // 清漆感，略微的粗糙度呈现质感
+                            thickness={2}      // 透射体积厚度
+                            clearcoat={1}      // 表层高光
                             clearcoatRoughness={0.1}
                             color="#ffffff"
                         />
                     </mesh>
+
+                    {/* 内部点云实体 */}
                     {positions && (
                         <points frustumCulled={false} renderOrder={3}>
                             <bufferGeometry ref={geometryRef}>
@@ -87,46 +98,27 @@ export const CrystalScene: React.FC<CrystalSceneProps> = ({
                             <pointsMaterial
                                 ref={materialRef}
                                 size={pointSize}
-                                color="#ffffff"
+                                color="#ffffff" // 换成强烈的对比色（深色），如果是白底
                                 transparent={true}
                                 opacity={pointOpacity}
-                                sizeAttenuation={true}
                                 blending={THREE.AdditiveBlending}
                                 depthWrite={false}
                                 depthTest={false}
+                                sizeAttenuation={true} // 保持近大远小的透视感
                                 toneMapped={false}
                             />
                         </points>
                     )}
-                    <mesh renderOrder={4}>
-                        <boxGeometry
-                            args={[
-                                Math.max(targetSize[0] * crystalScale, 1.6),
-                                Math.max(targetSize[1] * crystalScale, 2.0),
-                                Math.max(targetSize[2] * crystalScale, 1.3)
-                            ]}
-                        />
-                        <meshPhysicalMaterial
-                            transparent={true}
-                            opacity={0.16}
-                            roughness={0}
-                            metalness={0.08}
-                            clearcoat={1}
-                            clearcoatRoughness={0.1}
-                            depthWrite={false}
-                            side={THREE.DoubleSide}
-                            color="#dff8ff"
-                        />
-                    </mesh>
                 </group>
             </Float>
 
+            {/* 用户干预检视 (Active Inspect - Rule 3.4) */}
             <OrbitControls
-                enablePan={false}
-                enableDamping={true}
+                enablePan={false}     // 强制禁用平移 (绝对不允许模型被拖出视口)
+                enableDamping={true}  // 开启阻尼惯性
                 dampingFactor={0.05}
-                minDistance={7}
-                maxDistance={30}
+                minDistance={10}      // 距离钳制 (最近距离)
+                maxDistance={25}      // 距离钳制 (最远距离)
             />
         </>
     );
